@@ -5,3 +5,7 @@
 .fit {
     min-height: calc(100vh - 88px);
   }
+
+.next-span-wrapper > span {
+  height: 100% !important;
+}
