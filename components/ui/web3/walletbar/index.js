@@ -8,6 +8,7 @@ export default function WalletBar(){
 
   return(
   <section className="text-white bg-indigo-600 my-4 rounded-lg">
+    
   <div className="p-8">
     <h1 className="text-2xl">
       Hello, {account.data}

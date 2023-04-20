@@ -1,31 +1,30 @@
 import { useEffect } from "react";
-// import { ethers } from "ethers";
 import useSWR from "swr";
+
 const adminAddresses = {
   "0x1b9996f924dda33b675dbbca5792857ce3248e679d96e6cdce2550e288fd6bf0": true,
+  //o admin é a conta 0x909efca230d4faa7a985f953e911003e3a4395b9
 };
 
-export const handler = (web3) => () => {
+export const handler = (web3, provider) => () => {
   const { data, mutate, ...rest } = useSWR(
-    () =>
-      //identificador da função
-      web3 ? "web3/accounts" : null,
+    () => (web3 ? "web3/accounts" : null),
     async () => {
-      //callback function que vai rodar no background
-      const accounts = await web3.send("eth_requestAccounts", []);
+      const accounts = await web3.send("eth_requestAccounts", []); //olhar esta linha
       return accounts[0];
     }
   );
 
   useEffect(() => {
-    web3 &&
-      web3.on("accountsChanged", (accounts) => mutate(accounts[0] ?? null));
-  }, [web3]);
+    provider &&
+      provider.on("accountsChanged", (accounts) => mutate(accounts[0] ));
+      console.log('aqui');
+      //provider.on("accountsChanged", (accounts) => mutate(accounts[0] ?? null));
+  }, [provider]);
 
   return {
     data,
-    //isAdmin: (data && adminAddresses[ethers.utils.keccak256(data)]) ?? false,
-    isAdmin: true,
+    isAdmin: (data && adminAddresses[web3.utils.keccak256(data)]) ?? false,
     mutate,
     ...rest,
   };

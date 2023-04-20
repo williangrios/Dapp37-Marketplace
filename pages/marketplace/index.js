@@ -6,7 +6,8 @@ import { MarketHeader } from "@components/ui/marketplace";
 
 export default function Marketplace({courses}) {
   const {canPurchaseCourse} = useWalletInfo();
- 
+  
+
   
   return (
     <>

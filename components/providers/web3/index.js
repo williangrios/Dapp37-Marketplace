@@ -31,7 +31,7 @@ export default function Web3Provider({ children }) {
             web3,
             contract: null,
             isLoading: false,
-            hooks: setupHooks(web3)
+            hooks: setupHooks(web3, provider)
           });
         } else {
           setWeb3Api(api => ({...api, isLoading: false}));
@@ -46,15 +46,12 @@ export default function Web3Provider({ children }) {
     const {web3, provider, isLoading} = web3Api
     return {
       ...web3Api,
-      requireInstall: !isLoading && !provider,
+      requireInstall: !isLoading && !web3,
       connect: provider ?
           async () => {
               try {
-                console.log(web3Api);
                 await provider.request({method: "eth_requestAccounts"});
-                console.log('passou');
               } catch {
-                console.log('Não foi possivel conectar RELOAD');
                 location.reload()
               }
             } :

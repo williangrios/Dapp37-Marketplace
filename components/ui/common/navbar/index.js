@@ -1,17 +1,19 @@
 import { useWeb3 } from "@components/providers";
 import Button from "../button";
 import { useRouter } from "next/router";
-import { useAccount, useNetwork } from "@components/hooks/web3";
+import { useAccount } from "@components/hooks/web3";
 import ActiveLink from "../link";
 
 export default function Navbar() {
   const { isLoading, connect, requireInstall } = useWeb3();
-  const { account } = useAccount();
-  const { pathname } = useRouter();
+
+  const {pathname} = useRouter()
+  const { account} = useAccount();
+  //const {account} = useWalletInfo();
+
+  console.log(account);
 
   return (
-    //detectei o problema na aula 130
-
     <section>
       <div className="relative pt-6 px-4 sm:px-6 lg:px-8">
         <nav className="relative" aria-label="Global">
