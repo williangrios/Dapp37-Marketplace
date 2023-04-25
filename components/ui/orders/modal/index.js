@@ -13,7 +13,6 @@ const defaultOrder = {
 const _createFormState = (isDisabled = false, message ="") => ({isDisabled, message})
 
 const createFormState = ({price, email, confirmationEmail}, hasAgreedTOS) => {
-  console.log(hasAgreedTOS);
   if  (!price || Number(price) <= 0 ){
     return _createFormState(true, "Price is not valid");
   }else if (confirmationEmail.length === 0 || email.length === 0){
@@ -52,8 +51,6 @@ export default function OrderModal({course, onClose, onSubmit}) {
         onClose();
     }
 
-    console.log('aq');
-    console.log(hasAgreedTOS);
     const formState = createFormState(order, hasAgreedTOS)
 
   return (

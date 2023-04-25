@@ -10,6 +10,7 @@ const NETWORKS = {
   56: "Binance smart chain",
   137: "Polygon Mainnet",
   1337: "Ganache",
+  80001: "Mumbai"
 };
 
 const targetNetwork = NETWORKS[process.env.NEXT_PUBLIC_TARGET_CHAIN_ID];

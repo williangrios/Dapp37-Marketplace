@@ -11,8 +11,6 @@ export default function Navbar() {
   const { account} = useAccount();
   //const {account} = useWalletInfo();
 
-  console.log(account);
-
   return (
     <section>
       <div className="relative pt-6 px-4 sm:px-6 lg:px-8">

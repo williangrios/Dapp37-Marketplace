@@ -21,9 +21,17 @@ export const useNetwork= () => {
     }
 }
 
+export const useOwnedCourses = (...args) => {
+    const swrRes = enhanceHook( useHooks(hooks => hooks.useOwnedCourses)(...args))
+    return{
+        ownedCourses: swrRes
+    }
+}
+
 export const useWalletInfo= () => {
     const {account} = useAccount()
     const {network} = useNetwork()
+
 
     const canPurchaseCourse = !!(account.data && network.isSupported)
     return {account, network, canPurchaseCourse}
