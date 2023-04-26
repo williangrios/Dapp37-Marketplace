@@ -9,10 +9,8 @@ export default function Home({courses}) {
         
   return (
     <>
-
       <Hero />
       <CourseList courses={courses} />
-      
     </>
   );
 }

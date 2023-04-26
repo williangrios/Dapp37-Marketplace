@@ -1,15 +1,17 @@
+import Link from "next/link";
+
 const lectures = [
-    "How to init App",
-    "How to get a help",
-    "Introduction to Solidity",
-    "Programing in C++",
-    "How to write For Loops",
-    "Safe operator",
-  ]
+  "How to init App",
+  "How to get a help",
+  "Introduction to Solidity",
+  "Programing in C++",
+  "How to write For Loops",
+  "Safe operator",
+];
 
-export default function Curriculum({locked}) {
-
-  const statusClass = "px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+export default function Curriculum({ locked, courseState }) {
+  const statusClass =
+    "px-2 inline-flex text-xs leading-5 font-semibold rounded-full";
 
   return (
     <section className="max-w-5xl mx-auto">
@@ -50,17 +52,43 @@ export default function Curriculum({locked}) {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span  className={locked ? `${statusClass} bg-red-100 text-red-800` : `${statusClass} bg-green-100 text-green-800`}>
-                          {locked? "Locked": "Unlocked"}
+                        <span
+                          className={
+                            locked
+                              ? `${statusClass} bg-red-100 text-red-800`
+                              : `${statusClass} bg-green-100 text-green-800`
+                          }
+                        >
+                          {locked ? "Locked" : "Unlocked"}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a
-                          href="#"
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          {locked ? "Get Access": "Play" }
-                        </a>
+                        {locked ? (
+                          <>
+                            {courseState === "Deactivated" && (
+                              <Link href="/marketplace" legacyBehavior>
+                                <a className="text-indigo-600 hover:text-indigo-900">
+                                  Get Access
+                                </a>
+                              </Link>
+                            )}
+                            {courseState === "Purchased" && (
+                              <Link href="/faq" legacyBehavior>
+                                <a className="text-yellow-500 hover:text-yellow-900">
+                                  Waiting for activaction...
+                                </a>
+                              </Link>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <Link href="/watch" legacyBehavior>
+                              <a className="text-indigo-500 hover:text-indigo-900">
+                                Watch
+                              </a>
+                            </Link>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))}
