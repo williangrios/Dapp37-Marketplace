@@ -5,7 +5,7 @@ const _isEmpty = data => {
 
     return(
         data == null ||
-        data == "" ||
+        data === "" ||
         (Array.isArray(data) && data.length === 0) ||
         (data.constructor === Object && Object.keys(data).length === 0 ) 
     )
@@ -48,6 +48,13 @@ export const useOwnedCourse = (...args) => {
     const swrRes = enhanceHook( useHooks(hooks => hooks.useOwnedCourse)(...args))
     return{
         ownedCourse: swrRes
+    }
+}
+
+export const useManagedCourses = (...args) => {
+    const swrRes = enhanceHook( useHooks(hooks => hooks.useManagedCourses)(...args))
+    return{
+        managedCourses: swrRes
     }
 }
 

@@ -19,16 +19,26 @@ export const handler = (web3, provider) => () => {
   const { data,  mutate, ...rest } = useSWR(
     () => (web3 ? "web3/network" : null),
     async () => {
-      const netId = await web3.eth.net.getId();
+      //const netId = await web3.eth.net.getId(); esta linha funciona, mas coloquei a de baixo pra ficar igual ao prof
+      const netId = await web3.eth.getChainId()
+
+      if(!netId){
+        throw new Error("Cannot retrieve network. Please refresh the browser.")
+      }
+
       return NETWORKS[netId];
     }
   );
 
   useEffect(() => {
-    provider &&
-      provider.on("chainChanged", (netId) => {
-        mutate(NETWORKS[parseInt(netId, 16)]);
-      });
+
+    const mutator = netId =>  mutate(NETWORKS[parseInt(netId, 16)]);
+    
+    provider?.on("chainChanged", mutator)
+
+    return () => {
+      provider?.removeListener("chainChanged", mutator)
+    }
   }, [provider]);
 
   return {
