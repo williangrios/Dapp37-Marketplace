@@ -34,10 +34,14 @@ contract CourseMarketplace {
     address payable private owner;
 
     //errors
-    ///Courser has already a owner
+    //Courser has already a owner
     error CourseHasOwner();
     //only owner
     error OnlyOwner();
+    //Course is not created
+    error CourseIsNotCreated();
+    //invalid state
+    error InvalidState();
 
     //modifiers
     modifier onlyOwner {
@@ -69,6 +73,17 @@ contract CourseMarketplace {
         });
     }
 
+    function activateCourse(bytes32 courseHash) external onlyOwner{
+        if(!isCourseCreated(courseHash)){
+            revert CourseIsNotCreated();
+        }
+        Course storage course = ownedCourses[courseHash];
+        if(course.state != State.Purchased){
+            revert InvalidState();
+        }
+        course.state = State.Activated;
+    }
+
     function transferOwnership(address payable newContractOwner) external{
 
         setContractOwner(newContractOwner);
@@ -93,6 +108,10 @@ contract CourseMarketplace {
 
     function setContractOwner(address newOwner) private{
         owner = payable(newOwner);
+    }
+
+    function isCourseCreated(bytes32 courseHash) private view returns(bool){
+        return ownedCourses[courseHash].owner != address(0);
     }
 
     function hasCourseOwnership(bytes32 courseHashParam) private view returns(bool){
