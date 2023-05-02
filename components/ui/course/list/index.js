@@ -1,12 +1,12 @@
 import { useAccount } from "@components/hooks/web3";
 import { useWeb3 } from "@components/providers";
-import { Button } from "@components/ui/common";
+import { Button, Loader } from "@components/ui/common";
 import { CourseCard } from "@components/ui/course";
 import { OrderModal } from "@components/ui/orders";
 import { useState } from "react";
 
-export default function List({ courses, canPurchaseCourse }) {
-  const { web3, contract } = useWeb3();
+export default function List({ courses, hasConnectedWallet, isConnecting }) {
+  const { web3, contract, requireInstall } = useWeb3();
   const { account } = useAccount();
   const [selectedCourse, setSelectedCourse] = useState(null);
 
@@ -25,12 +25,13 @@ export default function List({ courses, canPurchaseCourse }) {
     const value = web3.utils.toWei(String(order.price));
 
     try {
-      const result = await contract.methods.purchaseCourse(hexCourseId, proof).send({from: account.data, value });
+      const result = await contract.methods
+        .purchaseCourse(hexCourseId, proof)
+        .send({ from: account.data, value });
       console.log(result);
     } catch (error) {
-      console.log( "purchase failed" + error);
+      console.log("purchase failed" + error);
     }
-
   };
 
   return (
@@ -39,17 +40,39 @@ export default function List({ courses, canPurchaseCourse }) {
         <CourseCard
           key={course.id}
           course={course}
-          Footer={() => (
-            <div className="mt-4">
+          Footer={() => {
+            if (requireInstall) {
+              return (
+                <Button
+                  variant="lightPurple"
+                  disabled={true}
+                >
+                  Install
+                </Button>
+              );
+            }
+
+            if (isConnecting) {
+              return (
+                <Button
+                  variant="lightPurple"
+                  disabled={true}
+                >
+                  <Loader size="sm"/>
+                </Button>
+              );
+            }
+
+            return (
               <Button
                 variant="lightPurple"
-                disabled={!canPurchaseCourse}
+                disabled={!hasConnectedWallet}
                 onClick={() => setSelectedCourse(course)}
               >
                 Purchase
               </Button>
-            </div>
-          )}
+            );
+          }}
         />
       ))}
       {selectedCourse && (

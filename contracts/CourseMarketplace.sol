@@ -1,120 +1,257 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.9;
-
-// Uncomment this line to use console.log
-// import "hardhat/console.sol";
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.4.22 <0.9.0;
 
 contract CourseMarketplace {
 
-    enum State{
-        Purchased,
-        Activated,
-        Deactivated
+  enum State {
+    Purchased,
+    Activated,
+    Deactivated
+  }
+
+  struct Course {
+    uint id; // 32
+    uint price; // 32
+    bytes32 proof; // 32
+    address owner; // 20
+    State state; // 1
+  }
+
+  bool public isStopped = false;
+
+  // mapping of courseHash to Course data
+  mapping(bytes32 => Course) private ownedCourses;
+
+  // mapping of courseID to courseHash
+  mapping(uint => bytes32) private ownedCourseHash;
+
+  // number of all courses + id of the course
+  uint private totalOwnedCourses;
+
+  address payable private owner;
+
+  constructor() {
+    setContractOwner(msg.sender);
+  }
+
+  /// Course has invalid state!
+  error InvalidState();
+
+  /// Course is not created!
+  error CourseIsNotCreated();
+
+  /// Course has already a Owner!
+  error CourseHasOwner();
+
+  /// Sender is not course owner!
+  error SenderIsNotCourseOwner();
+
+  /// Only owner has an access!
+  error OnlyOwner();
+
+  modifier onlyOwner() {
+    if (msg.sender != getContractOwner()) {
+      revert OnlyOwner();
+    }
+    _;
+  }
+
+  modifier onlyWhenNotStopped {
+    require(!isStopped);
+    _;
+  }
+
+  modifier onlyWhenStopped {
+    require(isStopped);
+    _;
+  }
+
+  receive() external payable {}
+
+  function withdraw(uint amount)
+    external
+    onlyOwner
+  {
+    (bool success, ) = owner.call{value: amount}("");
+    require(success, "Transfer failed.");
+  }
+
+  function emergencyWithdraw()
+    external
+    onlyWhenStopped
+    onlyOwner
+  {
+    (bool success, ) = owner.call{value: address(this).balance}("");
+    require(success, "Transfer failed.");
+  }
+
+  function selfDestruct()
+    external
+    onlyWhenStopped
+    onlyOwner
+  {
+    selfdestruct(owner);
+  }
+
+  function stopContract()
+    external
+    onlyOwner
+  {
+    isStopped = true;
+  }
+
+  function resumeContract()
+    external
+    onlyOwner
+  {
+    isStopped = false;
+  }
+
+  function purchaseCourse(
+    bytes16 courseId, // 0x00000000000000000000000000003130
+    bytes32 proof // 0x0000000000000000000000000000313000000000000000000000000000003130
+  )
+    external
+    payable
+    onlyWhenNotStopped
+  {
+    bytes32 courseHash = keccak256(abi.encodePacked(courseId, msg.sender));
+
+    if (hasCourseOwnership(courseHash)) {
+      revert CourseHasOwner();
     }
 
-    struct Course{
-        uint id;
-        uint price;
-        bytes32 proof;
-        address owner;
-        State state;
+    uint id = totalOwnedCourses++;
+
+    ownedCourseHash[id] = courseHash;
+    ownedCourses[courseHash] = Course({
+      id: id,
+      price: msg.value,
+      proof: proof,
+      owner: msg.sender,
+      state: State.Purchased
+    });
+  }
+
+  function repurchaseCourse(bytes32 courseHash)
+    external
+    payable
+    onlyWhenNotStopped
+  {
+    if (!isCourseCreated(courseHash)) {
+      revert CourseIsNotCreated();
     }
 
-    //mapping of courseHash to Course Data
-    mapping(bytes32 => Course) private ownedCourses;
-
-    //mapping of courseId to courseHash
-    //aqui eu tenho a informação codificada do curso/wallet que adquiriu
-    mapping(uint => bytes32) private ownedCourseHash;
-
-    //number of all courses + id of the courses
-    uint private totalOwnedCourses;
-
-    //contract owner
-    address payable private owner;
-
-    //errors
-    //Courser has already a owner
-    error CourseHasOwner();
-    //only owner
-    error OnlyOwner();
-    //Course is not created
-    error CourseIsNotCreated();
-    //invalid state
-    error InvalidState();
-
-    //modifiers
-    modifier onlyOwner {
-        if(msg.sender != owner){
-            revert OnlyOwner();
-        }
-        _;
+    if (!hasCourseOwnership(courseHash)) {
+      revert SenderIsNotCourseOwner();
     }
 
-    constructor(){
-        setContractOwner(msg.sender);
+    Course storage course = ownedCourses[courseHash];
+
+    if (course.state != State.Deactivated) {
+      revert InvalidState();
     }
 
-    function purchaseCourse(bytes16 courseId, bytes32 proof) external payable {
-        bytes32 courseHash = keccak256(abi.encodePacked(courseId, msg.sender));
-        
-        if (hasCourseOwnership(courseHash)){
-            revert CourseHasOwner();
-        }
-        
-        uint id = totalOwnedCourses++;
-        ownedCourseHash[id] = courseHash;
-        ownedCourses[courseHash] = Course({
-            id: id,
-            price: msg.value,
-            proof: proof,
-            owner: msg.sender,
-            state: State.Purchased
-        });
+    course.state = State.Purchased;
+    course.price = msg.value;
+  }
+
+  function activateCourse(bytes32 courseHash)
+    external
+    onlyWhenNotStopped
+    onlyOwner
+  {
+    if (!isCourseCreated(courseHash)) {
+      revert CourseIsNotCreated();
     }
 
-    function activateCourse(bytes32 courseHash) external onlyOwner{
-        if(!isCourseCreated(courseHash)){
-            revert CourseIsNotCreated();
-        }
-        Course storage course = ownedCourses[courseHash];
-        if(course.state != State.Purchased){
-            revert InvalidState();
-        }
-        course.state = State.Activated;
+    Course storage course = ownedCourses[courseHash];
+
+    if (course.state != State.Purchased) {
+      revert InvalidState();
     }
 
-    function transferOwnership(address payable newContractOwner) external{
+    course.state = State.Activated;
+  }
 
-        setContractOwner(newContractOwner);
+  function deactivateCourse(bytes32 courseHash)
+    external
+    onlyWhenNotStopped
+    onlyOwner
+  {
+    if (!isCourseCreated(courseHash)) {
+      revert CourseIsNotCreated();
     }
 
-    //getter functions
-    function getCourseCount() external view returns (uint){
-        return totalOwnedCourses;
+    Course storage course = ownedCourses[courseHash];
+
+    if (course.state != State.Purchased) {
+      revert InvalidState();
     }
 
-    function getCourseHashAtIndex(uint index) external view returns(bytes32){
-        return ownedCourseHash[index];
-    }
+    (bool success, ) = course.owner.call{value: course.price}("");
+    require(success, "Transfer failed!");
 
-    function getCourseByHash(bytes32 courseHash) external view returns(Course memory){
-        return ownedCourses[courseHash];
-    }
+    course.state = State.Deactivated;
+    course.price = 0;
+  }
 
-    function getContractOwner() public view returns (address){
-        return owner;
-    }
+  function transferOwnership(address newOwner)
+    external
+    onlyOwner
+  {
+    setContractOwner(newOwner);
+  }
 
-    function setContractOwner(address newOwner) private{
-        owner = payable(newOwner);
-    }
+  function getCourseCount()
+    external
+    view
+    returns (uint)
+  {
+    return totalOwnedCourses;
+  }
 
-    function isCourseCreated(bytes32 courseHash) private view returns(bool){
-        return ownedCourses[courseHash].owner != address(0);
-    }
+  function getCourseHashAtIndex(uint index)
+    external
+    view
+    returns (bytes32)
+  {
+    return ownedCourseHash[index];
+  }
 
-    function hasCourseOwnership(bytes32 courseHashParam) private view returns(bool){
-        return ownedCourses[courseHashParam].owner == msg.sender;
-    }
+  function getCourseByHash(bytes32 courseHash)
+    external
+    view
+    returns (Course memory)
+  {
+    return ownedCourses[courseHash];
+  }
+
+  function getContractOwner()
+    public
+    view
+    returns (address)
+  {
+    return owner;
+  }
+
+  function setContractOwner(address newOwner) private {
+    owner = payable(newOwner);
+  }
+
+  function isCourseCreated(bytes32 courseHash)
+    private
+    view
+    returns (bool)
+  {
+    return ownedCourses[courseHash].owner != 0x0000000000000000000000000000000000000000;
+  }
+
+  function hasCourseOwnership(bytes32 courseHash)
+    private
+    view
+    returns (bool)
+  {
+    return ownedCourses[courseHash].owner == msg.sender;
+  }
 }
