@@ -12,21 +12,27 @@ const defaultOrder = {
 
 const _createFormState = (isDisabled = false, message ="") => ({isDisabled, message})
 
-const createFormState = ({price, email, confirmationEmail}, hasAgreedTOS) => {
+const createFormState = ({price, email, confirmationEmail}, hasAgreedTOS, isNewPurchase) => {
   if  (!price || Number(price) <= 0 ){
     return _createFormState(true, "Price is not valid");
-  }else if (confirmationEmail.length === 0 || email.length === 0){
-    return _createFormState(true, "Please, provide email and confirmation");
-  }else if (email !== confirmationEmail){
-    return _createFormState(true, "Emails are not matching");
-  }else if(!hasAgreedTOS){
+  }
+  
+  if (isNewPurchase){
+    if (confirmationEmail.length === 0 || email.length === 0){
+      return _createFormState(true);
+    }else if (email !== confirmationEmail){
+      return _createFormState(true, "Emails are not matching");
+    }
+  }
+
+  if(!hasAgreedTOS){
     return _createFormState(true, "You need to agree with terms of service");
   }
   
   return _createFormState();
 }
 
-export default function OrderModal({course, onClose, onSubmit}) {
+export default function OrderModal({course, onClose, onSubmit, isNewPurchase}) {
     const [isOpen, setIsOpen] = useState(false);
     const [order, setOrder] = useState(defaultOrder);
     const [enablePrice, setEnablePrice] = useState(false);
@@ -51,7 +57,7 @@ export default function OrderModal({course, onClose, onSubmit}) {
         onClose();
     }
 
-    const formState = createFormState(order, hasAgreedTOS)
+    const formState = createFormState(order, hasAgreedTOS, isNewPurchase)
 
   return (
     <Modal isOpen={isOpen}>
@@ -102,8 +108,7 @@ export default function OrderModal({course, onClose, onSubmit}) {
                   Price will be verified at the time of the order. If the price will be lower, order can be declined (+- 2% slipage is allowed)
                 </p>
               </div>
-              {/* { isNewPurchase && */}
-              {true &&
+              { isNewPurchase &&
                 <>
                   <div className="mt-2 relative rounded-md">
                     <div className="mb-1">

@@ -1,4 +1,12 @@
-export default function Button({children, onClick, className, hoverable=true,  variant= "purple", ...rest}) {
+const SIZE = {
+  sm: "p-2 text-sm xs:px-4",
+  md: "p-3 text-base xs:px-8",
+  lg: "p-3 text-lg xs:px-8",
+}
+
+export default function Button({children, onClick, className, size ="md", hoverable=true,  variant= "purple", ...rest}) {
+
+  const sizeClass = SIZE[size];
 
   const variants ={
     purple: `text-white bg-indigo-600 ${ hoverable && "hover:bg-indigo-700"}`,
@@ -8,11 +16,13 @@ export default function Button({children, onClick, className, hoverable=true,  v
     white: `text-black bg-white`,
   }
 
+
+
   return (
     <button
       {...rest}
       onClick={onClick}
-      className={`disabled:opacity-50 disabled:cursor-not-allowed xs:px-8 xs:py-3 p-2 border rounded-md text-base font-medium ${className} ${variants[variant]}`}
+      className={`${sizeClass} disabled:opacity-50 disabled:cursor-not-allowed border rounded-md font-medium ${className} ${variants[variant]}`}
     >
       {children}
     </button>

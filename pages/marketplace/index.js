@@ -5,14 +5,15 @@ import { useWalletInfo } from "@components/hooks/web3";
 import { MarketHeader } from "@components/ui/marketplace";
 
 export default function Marketplace({courses}) {
-  const {hasConnectedWallet, isConnecting} = useWalletInfo();
+  //
   
 
   
   return (
     <>
       <MarketHeader />
-      <CourseList courses={courses} hasConnectedWallet={hasConnectedWallet} isConnecting={isConnecting}/>
+      {/* <CourseList courses={courses} hasConnectedWallet={hasConnectedWallet} isConnecting={isConnecting}/> */}
+      <CourseList courses={courses}/>
     </>
   );
 }
