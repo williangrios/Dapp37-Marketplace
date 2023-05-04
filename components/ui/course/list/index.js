@@ -4,6 +4,7 @@ import { Button, Loader, Message } from "@components/ui/common";
 import { CourseCard } from "@components/ui/course";
 import { OrderModal } from "@components/ui/orders";
 import { useState } from "react";
+import { withToast } from "@utils/toast";
 
 export default function List({ courses }) {
   const { web3, contract, requireInstall } = useWeb3();
@@ -11,6 +12,7 @@ export default function List({ courses }) {
   //const { account } = useAccount();
   const { ownedCourses } = useOwnedCourses(courses, account.data);
   const [selectedCourse, setSelectedCourse] = useState(null);
+  //const [busyCourse, setBusyCourse] = useState(null); aula 273
   const [isNewPurchase, setIsNewPuchase] = useState(true);
 
   const purchaseCourse = async (order) => {
@@ -22,17 +24,16 @@ export default function List({ courses }) {
 
     const value = web3.utils.toWei(String(order.price));
 
-    if(isNewPurchase){
+    if (isNewPurchase) {
       const emailHash = web3.utils.sha3(order.email);
       const proof = web3.utils.soliditySha3(
         { type: "bytes32", value: emailHash },
         { type: "bytes32", value: orderHash }
       );
-      _purchaseCourse(hexCourseId, proof, value);
-    }else{
-      _repurchaseCourse(orderHash, value);
+      withToast(_purchaseCourse(hexCourseId, proof, value));
+    } else {
+      withToast(_repurchaseCourse(orderHash, value));
     }
-
   };
 
   const _purchaseCourse = async (hexCourseId, proof, value) => {
@@ -40,22 +41,29 @@ export default function List({ courses }) {
       const result = await contract.methods
         .purchaseCourse(hexCourseId, proof)
         .send({ from: account.data, value });
-      console.log(result);
+      ownedCourses.mutate();
+      return result;
     } catch (error) {
-      console.log("purchase failed" + error);
+      throw new Error(error.message);
     }
-  }
+  };
 
-  const _repurchaseCourse = async  (courseHash, value) => {
+  const _repurchaseCourse = async (courseHash, value) => {
     try {
       const result = await contract.methods
         .repurchaseCourse(courseHash)
         .send({ from: account.data, value });
-      console.log(result);
+      ownedCourses.mutate();
+      return result;
     } catch (error) {
-      console.log("purchase failed" + error);
+      throw new Error(error.message);
     }
-  }
+  };
+
+  const cleanUpModal = () => {
+    setSelectedCourse(null);
+    setIsNewPuchase(true);
+  };
 
   return (
     <section className="grid md:grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
@@ -139,13 +147,13 @@ export default function List({ courses }) {
       })}
       {selectedCourse && (
         <OrderModal
-          isNewPurchase = {isNewPurchase}
+          isNewPurchase={isNewPurchase}
           course={selectedCourse}
-          onSubmit={purchaseCourse}
-          onClose={() => {
-            setSelectedCourse(null);
-            setIsNewPuchase(true);
+          onSubmit={(order) => {
+            purchaseCourse(order);
+            cleanUpModal();
           }}
+          onClose={cleanUpModal}
         />
       )}
     </section>

@@ -4,27 +4,22 @@ import { getAllCourses } from "@content/courses/fetcher";
 import { useWalletInfo } from "@components/hooks/web3";
 import { MarketHeader } from "@components/ui/marketplace";
 
-export default function Marketplace({courses}) {
-  //
-  
-
-  
+export default function Marketplace({ courses }) {
   return (
     <>
       <MarketHeader />
-      {/* <CourseList courses={courses} hasConnectedWallet={hasConnectedWallet} isConnecting={isConnecting}/> */}
-      <CourseList courses={courses}/>
+      <CourseList courses={courses} />
     </>
   );
 }
 
-export function getStaticProps(){
-  const {data} = getAllCourses();
-  return{
+export function getStaticProps() {
+  const { data } = getAllCourses();
+  return {
     props: {
-      courses: data
-    }
-  }
+      courses: data,
+    },
+  };
 }
 
-Marketplace.Layout = BaseLayout
+Marketplace.Layout = BaseLayout;
