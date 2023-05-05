@@ -9,13 +9,12 @@ import { withToast } from "@utils/toast";
 export default function List({ courses }) {
   const { web3, contract, requireInstall } = useWeb3();
   const { hasConnectedWallet, isConnecting, account } = useWalletInfo();
-  //const { account } = useAccount();
   const { ownedCourses } = useOwnedCourses(courses, account.data);
   const [selectedCourse, setSelectedCourse] = useState(null);
-  //const [busyCourse, setBusyCourse] = useState(null); aula 273
+  const [busyCourseId, setBusyCourseId] = useState(null);
   const [isNewPurchase, setIsNewPuchase] = useState(true);
 
-  const purchaseCourse = async (order) => {
+  const purchaseCourse = async (order, course) => {
     const hexCourseId = web3.utils.utf8ToHex(selectedCourse.id);
     const orderHash = web3.utils.soliditySha3(
       { type: "bytes16", value: hexCourseId },
@@ -24,39 +23,62 @@ export default function List({ courses }) {
 
     const value = web3.utils.toWei(String(order.price));
 
+    setBusyCourseId(course.id);
     if (isNewPurchase) {
       const emailHash = web3.utils.sha3(order.email);
       const proof = web3.utils.soliditySha3(
         { type: "bytes32", value: emailHash },
         { type: "bytes32", value: orderHash }
       );
-      withToast(_purchaseCourse(hexCourseId, proof, value));
+      withToast(_purchaseCourse({ hexCourseId, proof, value }, course));
     } else {
-      withToast(_repurchaseCourse(orderHash, value));
+      withToast(_repurchaseCourse({ courseHash: orderHash, value }, course));
     }
   };
 
-  const _purchaseCourse = async (hexCourseId, proof, value) => {
+  const _purchaseCourse = async ({ hexCourseId, proof, value }, course) => {
     try {
       const result = await contract.methods
         .purchaseCourse(hexCourseId, proof)
         .send({ from: account.data, value });
-      ownedCourses.mutate();
+      ownedCourses.mutate([
+        ...ownedCourses.data,
+        {
+          ...course,
+          proof,
+          state: "Purchased",
+          owner: account.data,
+          price: value,
+        },
+      ]);
       return result;
     } catch (error) {
       throw new Error(error.message);
+    } finally {
+      setBusyCourseId(null);
     }
   };
 
-  const _repurchaseCourse = async (courseHash, value) => {
+  const _repurchaseCourse = async ({ courseHash, value }, course) => {
     try {
       const result = await contract.methods
         .repurchaseCourse(courseHash)
         .send({ from: account.data, value });
-      ownedCourses.mutate();
+      
+      const index = ownedCourses.data.findIndex(c => c.id === course.id)
+      
+      if(index >=0 ){
+        ownedCourses.data[index].state = "Purchased"
+        ownedCourses.mutate(ownedCourses.data);
+      }else{
+        ownedCourses.mutate();
+      }
+
       return result;
     } catch (error) {
       throw new Error(error.message);
+    } finally {
+      setBusyCourseId(null);
     }
   };
 
@@ -94,19 +116,24 @@ export default function List({ courses }) {
               if (!ownedCourses.hasInitialResponse) {
                 return (
                   <Button size="sm" variant="lightPurple" disabled={true}>
-                    <Loader size="sm" />
+                    {
+                      hasConnectedWallet ? 
+                      <Loader size="sm" />
+                      :
+                      "Connect"
+                    }
+                    
                   </Button>
                 );
               }
 
+              const isBusy = busyCourseId === course.id;
+
               if (owned) {
                 return (
                   <>
-                    <div>
+                    <div className="flex">
                       <Button
-                        onClick={() => {
-                          alert("ok");
-                        }}
                         disabled={false}
                         size="sm"
                         variant="white"
@@ -115,6 +142,7 @@ export default function List({ courses }) {
                       </Button>
                       {owned.state === "Deactivated" && (
                         <Button
+                          disabled={isBusy}
                           onClick={() => {
                             setIsNewPuchase(false);
                             setSelectedCourse(course);
@@ -123,7 +151,14 @@ export default function List({ courses }) {
                           variant="purple"
                           className="ml-1"
                         >
-                          Fund to Activate
+                          {isBusy ? (
+                            <div className="flex">
+                              <Loader size="sm" />
+                              <div className="ml-2">In progress</div>
+                            </div>
+                          ) : (
+                            <div>Fund to activate</div>
+                          )}
                         </Button>
                       )}
                     </div>
@@ -135,10 +170,17 @@ export default function List({ courses }) {
                 <Button
                   variant="lightPurple"
                   size="sm"
-                  disabled={!hasConnectedWallet}
+                  disabled={!hasConnectedWallet || isBusy}
                   onClick={() => setSelectedCourse(course)}
                 >
-                  Purchase
+                  {isBusy ? (
+                    <div className="flex">
+                      <Loader size="sm" />
+                      <div className="ml-2">In progress</div>
+                    </div>
+                  ) : (
+                    <div>Purchase</div>
+                  )}
                 </Button>
               );
             }}
@@ -149,8 +191,8 @@ export default function List({ courses }) {
         <OrderModal
           isNewPurchase={isNewPurchase}
           course={selectedCourse}
-          onSubmit={(order) => {
-            purchaseCourse(order);
+          onSubmit={(formData, course, order) => {
+            purchaseCourse(formData, course, order);
             cleanUpModal();
           }}
           onClose={cleanUpModal}
