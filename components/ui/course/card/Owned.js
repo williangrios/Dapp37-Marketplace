@@ -22,6 +22,7 @@ export default function OwnedCourseCard({ children, course }) {
               width="45" 
               height="45"
               layout="responsive"
+              alt={course.title}
             />
           </div>
         </div>

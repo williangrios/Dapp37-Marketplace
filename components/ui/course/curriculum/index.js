@@ -66,23 +66,23 @@ export default function Curriculum({ locked, courseState, isLoading }) {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         {isLoading ? (
                           <Loader />
-                        ) : locked ? (
-                          <>
-                            {courseState === "Deactivated" && (
-                              <Link href="/marketplace" legacyBehavior>
-                                <a className="text-indigo-600 hover:text-indigo-900">
-                                  Get Access
-                                </a>
-                              </Link>
-                            )}
-                            {courseState === "Purchased" && (
-                              <Link href="/faq" legacyBehavior>
-                                <a className="text-yellow-500 hover:text-yellow-900">
-                                  Waiting for activaction...
-                                </a>
-                              </Link>
-                            )}
-                          </>
+                        ) : locked ? (<></>
+                          // <>
+                          //   {courseState === "Deactivated" && (
+                          //     <Link href="/marketplace" legacyBehavior>
+                          //       <a className="text-indigo-600 hover:text-indigo-900">
+                          //         Get Access
+                          //       </a>
+                          //     </Link>
+                          //   )}
+                          //   {courseState === "Purchased" && (
+                          //     <Link href="/faq" legacyBehavior>
+                          //       <a className="text-yellow-500 hover:text-yellow-900">
+                          //         Waiting for activaction...
+                          //       </a>
+                          //     </Link>
+                          //   )}
+                          // </>
                         ) : (
                           <>
                             <Link href="/watch" legacyBehavior>

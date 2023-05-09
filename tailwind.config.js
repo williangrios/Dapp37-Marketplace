@@ -8,10 +8,10 @@ module.exports = {
   ],
   safelist: [
     {
-      pattern: /bg-(red|green|yellow)-(100|200|600|900)/,
+      pattern: /bg-(red|green|yellow|indigo)-(100|200|600|700|900)/,
     },
     {
-      pattern: /text-(red|green|yellow)-(100|200|600|900)/,
+      pattern: /text-(red|green|yellow|indigo)-(100|200|600|700|900)/,
     },
   ],
   theme: {
