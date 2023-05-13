@@ -6,12 +6,13 @@ contract CourseMarketplace {
   struct Purchase {
     uint purchaseDate;
     uint refundUntil;
+    uint earnAfter;
     uint value;
     bool refunded;
+    bool earned;
   }
 
   bool public isStopped = false;
-  uint public daysToRefund = 7;
   address payable private owner;
 
   //wallet buyer => (courseId => purchase)
@@ -26,6 +27,10 @@ contract CourseMarketplace {
   /// Only owner has an access!
   error OnlyOwner();
   error RefundNotAllowed();
+  error AlreadyRefunded();
+  error AlreadyEarned();
+  error EarnNotAllowed();
+  error ErrorOnRefund();
 
   modifier onlyOwner() {
     if (msg.sender != getContractOwner()) {
@@ -86,7 +91,7 @@ contract CourseMarketplace {
   }
 
   function purchaseCourse(
-    uint courseId
+    uint courseId, uint daysToRefund, uint daysToEarn
   )
     external
     payable
@@ -94,19 +99,51 @@ contract CourseMarketplace {
   {
     coursePurchased[msg.sender][courseId] = Purchase(
       {purchaseDate: block.timestamp,
-      refundUntil: block.timestamp + 7 days ,
+      refundUntil: block.timestamp + (daysToRefund * 1 days) ,
       value: msg.value,
-      refunded: false});
+      earnAfter: block.timestamp + (daysToEarn * 1 days),
+      refunded: false,
+      earned: false
+      });
   }
 
   function refundCourse(
     uint courseId
-  ) external onlyWhenNotStopped{
-    Purchase storage purchase = coursePurchased[msg.sender][courseId];
-    if (block.timestamp > purchase.refundUntil){
+  ) external onlyWhenNotStopped returns (bool){
+    Purchase storage purchase = getPurchasedCourse(courseId);
+    if (block.timestamp > purchase.refundUntil ){
       revert RefundNotAllowed();
     }
+    if(purchase.refunded){
+      revert AlreadyRefunded();
+    }
+    //refunding
+    purchase.refunded = true;
+    (bool refunded, ) =payable(msg.sender).call{value: purchase.value}("");
+    if (!refunded){
+      revert ErrorOnRefund();
+    }
+    return true;
+  }
 
+  function earnCourse(
+    uint courseId
+  ) external onlyWhenNotStopped returns (bool){
+    Purchase storage purchase = getPurchasedCourse(courseId);
+    if(block.timestamp < purchase.earnAfter || purchase.refunded == true){
+      revert EarnNotAllowed();
+    }
+    if (purchase.earned){
+      revert AlreadyEarned();
+    }
+    
+    //earning
+    purchase.earned = true;
+    (bool refunded, ) = payable(msg.sender).call{value: purchase.value}("");
+    if (!refunded){
+      revert ErrorOnRefund();
+    }
+    return true;
   }
 
   function transferOwnership(address newOwner)
@@ -124,8 +161,13 @@ contract CourseMarketplace {
     return owner;
   }
 
+  function getPurchasedCourse(uint courseId) private view returns(Purchase storage){
+    return coursePurchased[msg.sender][courseId];
+  }
+
   function setContractOwner(address newOwner) private {
     owner = payable(newOwner);
   }
 
 }
+
